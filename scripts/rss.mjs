@@ -21,12 +21,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // ✅ Read JSON manually (Azure-safe)
-const tagData = JSON.parse(
-  readFileSync(
-    path.join(__dirname, '../app/tag-data.json'),
-    'utf-8'
-  )
-);
+const tagData = JSON.parse(readFileSync(path.join(__dirname, '../app/tag-data.json'), 'utf-8'));
 
 const outputFolder = process.env.EXPORT ? 'out' : 'public';
 
