@@ -2,45 +2,79 @@ name: Azure Static Web Apps CI/CD
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
     types: [opened, synchronize, reopened, closed]
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   build_and_deploy_job:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
     name: Build and Deploy Job
+
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+
+      # 🔔 Discord – Start deploy
+      - name: Discord | Deploy started
+        uses: appleboy/discord-action@v1.2.0
         with:
-          submodules: true
-          lfs: false
+          webhook_url: ${{ secrets.WEBHOOK_URL }}
+          username: "Paimon Deploy"
+          message: |
+            🚀 **Bắt đầu deploy Blog**
+            - Repo: `${{ github.repository }}`
+            - Branch: `${{ github.ref_name }}`
+            - Người push: **${{ github.actor }}**
+            - Commit: `${{ github.sha }}`
+            - Message: _${{ github.event.head_commit.message }}_
+
+      # 🚀 Azure deploy
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_LIVELY_DESERT_0120E6600 }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }} # Used for Github integrations (i.e. PR comments)
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
-          ###### Repository/Build Configurations - These values can be configured to match your app requirements. ######
-          # For more information regarding Static Web App workflow configurations, please visit: https://aka.ms/swaworkflowconfig
-          app_location: "/" # App source code path
-          api_location: "" # Api source code path - optional
-          output_location: ".next" # Built app content directory - optional
-          ###### End of Repository/Build Configurations ######
+          app_location: "/"
+          api_location: ""
+          output_location: ".next"
+
+      # ✅ Discord – Deploy success
+      - name: Discord | Deploy success
+        if: success()
+        uses: appleboy/discord-action@v1.2.0
+        with:
+          webhook_url: ${{ secrets.WEBHOOK_URL }}
+          username: "Paimon Deploy"
+          message: |
+            ✅ **Deploy THÀNH CÔNG 🎉**
+            - Website: 🌐 https://<your-app>.azurestaticapps.net
+            - Commit: `${{ github.sha }}`
+            - By: **${{ github.actor }}**
+
+      # ❌ Discord – Deploy failed
+      - name: Discord | Deploy failed
+        if: failure()
+        uses: appleboy/discord-action@v1.2.0
+        with:
+          webhook_url: ${{ secrets.WEBHOOK_URL }}
+          username: "Paimon Deploy"
+          message: |
+            ❌ **Deploy THẤT BẠI**
+            - Repo: `${{ github.repository }}`
+            - Branch: `${{ github.ref_name }}`
+            - Người push: **${{ github.actor }}**
+            - Xem log: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
     runs-on: ubuntu-latest
     name: Close Pull Request Job
     steps:
-      - name: Close Pull Request
-        id: closepullrequest
-        uses: Azure/static-web-apps-deploy@v1
+      - uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_LIVELY_DESERT_0120E6600 }}
           action: "close"

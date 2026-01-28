@@ -3,7 +3,23 @@ import path from 'path';
 import { slug } from 'github-slugger';
 import { escape } from 'pliny/utils/htmlEscaper.js';
 import siteMetadata from '../data/siteMetadata.js';
-import tagData from '../app/tag-data.json' assert { type: 'json' };
+// import tagData from '../app/tag-data.json' assert { type: 'json' };
+
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const tagData = JSON.parse(
+  fs.readFileSync(
+    path.join(__dirname, '../app/tag-data.json'),
+    'utf-8'
+  )
+);
+
+
 import { allBlogs } from '../.contentlayer/generated/index.mjs';
 import { sortPosts } from 'pliny/utils/contentlayer.js';
 
