@@ -14,23 +14,23 @@ jobs:
     name: Build and Deploy Job
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      # 🔔 Discord – Start deploy
-      - name: Discord | Deploy started
+      # 🔔 1. Thông báo bắt đầu (Chỉ gửi thông tin ngắn gọn)
+      - name: Discord | Start
         uses: appleboy/discord-action@v1.2.0
         with:
           webhook_url: ${{ secrets.WEBHOOK_URL }}
-          username: "Paimon Deploy"
+          username: "Paimon Deployer"
+          avatar_url: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png"
           message: |
-            🚀 **Bắt đầu deploy Blog**
-            - Repo: `${{ github.repository }}`
-            - Branch: `${{ github.ref_name }}`
-            - Người push: **${{ github.actor }}**
-            - Commit: `${{ github.sha }}`
-            - Message: _${{ github.event.head_commit.message }}_
+            ### 🛠️ Đang bắt đầu Deploy...
+            - **Dự án:** `${{ github.repository }}`
+            - **Môi trường:** `${{ github.ref_name == 'main' && '🚀 Production' || '🧪 Preview' }}`
+            - **Commit:** `${{ github.event.head_commit.message || github.event.pull_request.title }}`
 
-      # 🚀 Azure deploy
+      # 🚀 2. Azure Static Web Apps Deploy
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
@@ -40,41 +40,44 @@ jobs:
           action: "upload"
           app_location: "/"
           api_location: ""
-          output_location: ".next"
+          output_location: ".next" # Lưu ý: Nếu dùng Static Export thì để là "out"
 
-      # ✅ Discord – Deploy success
-      - name: Discord | Deploy success
+      # ✅ 3. Thông báo Thành công (Gửi link xem kết quả)
+      - name: Discord | Success
         if: success()
         uses: appleboy/discord-action@v1.2.0
         with:
           webhook_url: ${{ secrets.WEBHOOK_URL }}
-          username: "Paimon Deploy"
+          username: "Paimon Deployer"
           message: |
-            ✅ **Deploy THÀNH CÔNG 🎉**
-            - Website: 🌐 https://<your-app>.azurestaticapps.net
-            - Commit: `${{ github.sha }}`
-            - By: **${{ github.actor }}**
+            ## ✅ DEPLOY THÀNH CÔNG 🎉
+            - **Author:** `${{ github.actor }}`
+            - **Branch:** `${{ github.ref_name }}`
+            ---
+            🌐 **Xem kết quả tại:** ${{ steps.builddeploy.outputs.static_web_app_url }}
 
-      # ❌ Discord – Deploy failed
-      - name: Discord | Deploy failed
+      # ❌ 4. Thông báo Thất bại (Gửi link log lỗi)
+      - name: Discord | Failure
         if: failure()
         uses: appleboy/discord-action@v1.2.0
         with:
           webhook_url: ${{ secrets.WEBHOOK_URL }}
-          username: "Paimon Deploy"
+          username: "Paimon Deployer"
           message: |
-            ❌ **Deploy THẤT BẠI**
-            - Repo: `${{ github.repository }}`
-            - Branch: `${{ github.ref_name }}`
-            - Người push: **${{ github.actor }}**
-            - Xem log: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            ## ❌ DEPLOY THẤT BẠI
+            - **Người thực hiện:** `${{ github.actor }}`
+            - **Tại commit:** `${{ github.sha }}`
+            ---
+            🔍 **Xem lỗi chi tiết tại đây:** https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
+  # Job đóng Preview Environment khi Close PR
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
     runs-on: ubuntu-latest
     name: Close Pull Request Job
     steps:
-      - uses: Azure/static-web-apps-deploy@v1
+      - name: Close PR Environment
+        uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_LIVELY_DESERT_0120E6600 }}
           action: "close"
